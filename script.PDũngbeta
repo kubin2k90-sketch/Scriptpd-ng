@@ -1,0 +1,509 @@
+-- ==========================================
+-- pDũngv1aim torso - OPTIMIZED MENU (FIXED)
+-- ==========================================
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
+local UserInputService = game:GetService("UserInputService")
+
+-- Dọn dẹp GUI cũ nếu chạy lại script
+if CoreGui:FindFirstChild("pDungMenuMobile") then
+    CoreGui.pDungMenuMobile:Destroy()
+end
+
+-- Cấu hình thông số chung
+local Settings = {
+    AimEnabled = false,
+    TargetPart = "UpperTorso", -- "UpperTorso" hoặc "Head"
+    FOVRadius = 80,
+    MaxRange = 150,
+    
+    ESPEnabled = true,
+    ESPBox = true,
+    ESPHealth = true,
+    ESPTracer = true,
+    ESPDistanceMax = 600,
+
+    NoEffects = false,
+    WhiteParts = false,
+    ShowFPS = true
+}
+
+local ESPList = {}
+
+-- Tạo vòng tròn FOV an toàn
+local FOVCircle = Drawing.new("Circle")
+FOVCircle.Thickness = 2
+FOVCircle.Color = Color3.fromRGB(255, 50, 50)
+FOVCircle.Filled = false
+FOVCircle.Transparency = 1
+FOVCircle.NumSides = 40
+FOVCircle.Radius = Settings.FOVRadius
+FOVCircle.Visible = false
+
+-- Tạo Text FPS
+local FPSText = Drawing.new("Text")
+FPSText.Visible = true
+FPSText.Color = Color3.fromRGB(0, 255, 0)
+FPSText.Size = 16
+FPSText.Center = false
+FPSText.Outline = true
+FPSText.Position = Vector2.new(15, 15)
+
+-- ==========================================
+-- GIAO DIỆN MENU & LOGO BẬT/TẮT (40x40)
+-- ==========================================
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "pDungMenuMobile"
+ScreenGui.Parent = CoreGui
+ScreenGui.ResetOnSpawn = false
+
+-- Logo hình tròn 40x40 bật/tắt menu
+local ToggleMenuBtn = Instance.new("TextButton")
+ToggleMenuBtn.Parent = ScreenGui
+ToggleMenuBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+ToggleMenuBtn.Position = UDim2.new(0, 15, 0, 140)
+ToggleMenuBtn.Size = UDim2.new(0, 40, 0, 40)
+ToggleMenuBtn.Font = Enum.Font.SourceSansBold
+ToggleMenuBtn.Text = "pDũng"
+ToggleMenuBtn.TextColor3 = Color3.fromRGB(50, 255, 50)
+ToggleMenuBtn.TextSize = 11
+ToggleMenuBtn.Active = true
+ToggleMenuBtn.Draggable = true
+
+local UICornerLogo = Instance.new("UICorner")
+UICornerLogo.CornerRadius = UDim.new(1, 0)
+UICornerLogo.Parent = ToggleMenuBtn
+
+-- Khung Menu tổng
+local MainFrame = Instance.new("Frame")
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+MainFrame.BackgroundTransparency = 0.1
+MainFrame.Position = UDim2.new(0, 65, 0, 70)
+MainFrame.Size = UDim2.new(0, 260, 0, 340)
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Visible = true
+
+ToggleMenuBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = not MainFrame.Visible
+end)
+
+local UICornerFrame = Instance.new("UICorner")
+UICornerFrame.CornerRadius = UDim.new(0, 10)
+UICornerFrame.Parent = MainFrame
+
+-- Tiêu đề Menu đã được đổi tên
+local Title = Instance.new("TextLabel")
+Title.Parent = MainFrame
+Title.BackgroundTransparency = 1
+Title.Position = UDim2.new(0, 10, 0, 5)
+Title.Size = UDim2.new(0, 240, 0, 25)
+Title.Font = Enum.Font.SourceSansBold
+Title.Text = "pDũngv1aim torso"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 15
+
+-- Các Nút Chuyển Tab (Aim, ESP, Giảm Lag)
+local AimTabBtn = Instance.new("TextButton")
+AimTabBtn.Parent = MainFrame
+AimTabBtn.BackgroundColor3 = Color3.fromRGB(50, 150, 255)
+AimTabBtn.Position = UDim2.new(0, 10, 0, 32)
+AimTabBtn.Size = UDim2.new(0, 75, 0, 26)
+AimTabBtn.Font = Enum.Font.SourceSansBold
+AimTabBtn.Text = "AIM"
+AimTabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+AimTabBtn.TextSize = 12
+
+local ESPTabBtn = Instance.new("TextButton")
+ESPTabBtn.Parent = MainFrame
+ESPTabBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+ESPTabBtn.Position = UDim2.new(0, 92, 0, 32)
+ESPTabBtn.Size = UDim2.new(0, 75, 0, 26)
+ESPTabBtn.Font = Enum.Font.SourceSansBold
+ESPTabBtn.Text = "ESP"
+ESPTabBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+ESPTabBtn.TextSize = 12
+
+local OptTabBtn = Instance.new("TextButton")
+OptTabBtn.Parent = MainFrame
+OptTabBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+OptTabBtn.Position = UDim2.new(0, 174, 0, 32)
+OptTabBtn.Size = UDim2.new(0, 75, 0, 26)
+OptTabBtn.Font = Enum.Font.SourceSansBold
+OptTabBtn.Text = "GIẢM LAG"
+OptTabBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+OptTabBtn.TextSize = 12
+
+local AimContainer = Instance.new("Frame")
+AimContainer.Parent = MainFrame
+AimContainer.BackgroundTransparency = 1
+AimContainer.Position = UDim2.new(0, 0, 0, 65)
+AimContainer.Size = UDim2.new(1, 0, 1, -65)
+AimContainer.Visible = true
+
+local ESPContainer = Instance.new("Frame")
+ESPContainer.Parent = MainFrame
+ESPContainer.BackgroundTransparency = 1
+ESPContainer.Position = UDim2.new(0, 0, 0, 65)
+ESPContainer.Size = UDim2.new(1, 0, 1, -65)
+ESPContainer.Visible = false
+
+local OptContainer = Instance.new("Frame")
+OptContainer.Parent = MainFrame
+OptContainer.BackgroundTransparency = 1
+OptContainer.Position = UDim2.new(0, 0, 0, 65)
+OptContainer.Size = UDim2.new(1, 0, 1, -65)
+OptContainer.Visible = false
+
+AimTabBtn.MouseButton1Click:Connect(function()
+    AimContainer.Visible = true; ESPContainer.Visible = false; OptContainer.Visible = false
+    AimTabBtn.BackgroundColor3 = Color3.fromRGB(50, 150, 255); AimTabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ESPTabBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60); ESPTabBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+    OptTabBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60); OptTabBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+end)
+
+ESPTabBtn.MouseButton1Click:Connect(function()
+    AimContainer.Visible = false; ESPContainer.Visible = true; OptContainer.Visible = false
+    ESPTabBtn.BackgroundColor3 = Color3.fromRGB(50, 150, 255); ESPTabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    AimTabBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60); AimTabBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+    OptTabBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60); OptTabBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+end)
+
+OptTabBtn.MouseButton1Click:Connect(function()
+    AimContainer.Visible = false; ESPContainer.Visible = false; OptContainer.Visible = true
+    OptTabBtn.BackgroundColor3 = Color3.fromRGB(50, 150, 255); OptTabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    AimTabBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60); AimTabBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+    ESPTabBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60); ESPTabBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+end)
+
+-- ==========================================
+-- NỘI DUNG TAB AIMBOT
+-- ==========================================
+local AimButton = Instance.new("TextButton")
+AimButton.Parent = AimContainer
+AimButton.BackgroundColor3 = Color3.fromRGB(20, 80, 20)
+AimButton.Position = UDim2.new(0, 10, 0, 5)
+AimButton.Size = UDim2.new(0, 240, 0, 30)
+AimButton.Font = Enum.Font.SourceSansBold
+AimButton.Text = "Trạng thái Aim: TẮT"
+AimButton.TextColor3 = Color3.fromRGB(255, 50, 50)
+AimButton.TextSize = 13
+
+AimButton.MouseButton1Click:Connect(function()
+    Settings.AimEnabled = not Settings.AimEnabled
+    if Settings.AimEnabled then
+        AimButton.Text = "Trạng thái Aim: BẬT"
+        AimButton.TextColor3 = Color3.fromRGB(50, 255, 50)
+        AimButton.BackgroundColor3 = Color3.fromRGB(20, 80, 20)
+    else
+        AimButton.Text = "Trạng thái Aim: TẮT"
+        AimButton.TextColor3 = Color3.fromRGB(255, 50, 50)
+        AimButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    end
+end)
+
+local PartBtn = Instance.new("TextButton")
+PartBtn.Parent = AimContainer
+PartBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+PartBtn.Position = UDim2.new(0, 10, 0, 40)
+PartBtn.Size = UDim2.new(0, 240, 0, 26)
+PartBtn.Font = Enum.Font.SourceSansBold
+PartBtn.Text = "Mục tiêu: Thân (Torso)"
+PartBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+PartBtn.TextSize = 12
+
+PartBtn.MouseButton1Click:Connect(function()
+    if Settings.TargetPart == "UpperTorso" then
+        Settings.TargetPart = "Head"
+        PartBtn.Text = "Mục tiêu: Đầu (Head)"
+        PartBtn.TextColor3 = Color3.fromRGB(255, 255, 100)
+    else
+        Settings.TargetPart = "UpperTorso"
+        PartBtn.Text = "Mục tiêu: Thân (Torso)"
+        PartBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    end
+end)
+
+local function CreateSlider(parent, name, yPos, minVal, maxVal, currentVal, callback)
+    local Label = Instance.new("TextLabel")
+    Label.Parent = parent
+    Label.BackgroundTransparency = 1
+    Label.Position = UDim2.new(0, 10, 0, yPos)
+    Label.Size = UDim2.new(0, 240, 0, 16)
+    Label.Font = Enum.Font.SourceSans
+    Label.Text = name .. ": " .. currentVal
+    Label.TextColor3 = Color3.fromRGB(220, 220, 220)
+    Label.TextSize = 11
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+
+    local SliderBar = Instance.new("TextButton")
+    SliderBar.Parent = parent
+    SliderBar.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+    SliderBar.Position = UDim2.new(0, 10, 0, yPos + 16)
+    SliderBar.Size = UDim2.new(0, 240, 0, 12)
+    SliderBar.Text = ""
+
+    local FillBar = Instance.new("Frame")
+    FillBar.Parent = SliderBar
+    FillBar.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+    FillBar.Size = UDim2.new((currentVal - minVal) / (maxVal - minVal), 0, 1, 0)
+    FillBar.BorderSizePixel = 0
+
+    local dragging = false
+    SliderBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = true end
+    end)
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local pos = input.Position.X
+            local barPos = SliderBar.AbsolutePosition.X
+            local barSize = SliderBar.AbsoluteSize.X
+            local percent = math.clamp((pos - barPos) / barSize, 0, 1)
+            local val = math.floor(minVal + (maxVal - minVal) * percent)
+            FillBar.Size = UDim2.new(percent, 0, 1, 0)
+            Label.Text = name .. ": " .. val
+            callback(val)
+        end
+    end)
+end
+
+CreateSlider(AimContainer, "Vòng tròn FOV", 72, 30, 300, Settings.FOVRadius, function(val) Settings.FOVRadius = val end)
+CreateSlider(AimContainer, "Tầm bắn Aim", 124, 30, 300, Settings.MaxRange, function(val) Settings.MaxRange = val end)
+
+-- ==========================================
+-- NỘI DUNG TAB ESP
+-- ==========================================
+local ESPButton = Instance.new("TextButton")
+ESPButton.Parent = ESPContainer
+ESPButton.BackgroundColor3 = Color3.fromRGB(20, 80, 20)
+ESPButton.Position = UDim2.new(0, 10, 0, 5)
+ESPButton.Size = UDim2.new(0, 240, 0, 30)
+ESPButton.Font = Enum.Font.SourceSansBold
+ESPButton.Text = "Trạng thái ESP: BẬT"
+ESPButton.TextColor3 = Color3.fromRGB(50, 255, 50)
+ESPButton.TextSize = 13
+
+ESPButton.MouseButton1Click:Connect(function()
+    Settings.ESPEnabled = not Settings.ESPEnabled
+    if Settings.ESPEnabled then
+        ESPButton.Text = "Trạng thái ESP: BẬT"
+        ESPButton.TextColor3 = Color3.fromRGB(50, 255, 50)
+        ESPButton.BackgroundColor3 = Color3.fromRGB(20, 80, 20)
+    else
+        ESPButton.Text = "Trạng thái ESP: TẮT"
+        ESPButton.TextColor3 = Color3.fromRGB(255, 50, 50)
+        ESPButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        for _, esp in pairs(ESPList) do
+            if esp.Box then esp.Box.Visible = false end
+            if esp.HealthBar then esp.HealthBar.Visible = false end
+            if esp.HealthFill then esp.HealthFill.Visible = false end
+            if esp.Tracer then esp.Tracer.Visible = false end
+        end
+    end
+end)
+
+local TracerBtn = Instance.new("TextButton")
+TracerBtn.Parent = ESPContainer
+TracerBtn.BackgroundColor3 = Color3.fromRGB(20, 80, 20)
+TracerBtn.Position = UDim2.new(0, 10, 0, 40)
+TracerBtn.Size = UDim2.new(0, 240, 0, 26)
+TracerBtn.Font = Enum.Font.SourceSansBold
+TracerBtn.Text = "ESP Tia (Tracer): BẬT"
+TracerBtn.TextColor3 = Color3.fromRGB(50, 255, 50)
+TracerBtn.TextSize = 12
+
+TracerBtn.MouseButton1Click:Connect(function()
+    Settings.ESPTracer = not Settings.ESPTracer
+    if Settings.ESPTracer then
+        TracerBtn.Text = "ESP Tia (Tracer): BẬT"
+        TracerBtn.TextColor3 = Color3.fromRGB(50, 255, 50)
+        TracerBtn.BackgroundColor3 = Color3.fromRGB(20, 80, 20)
+    else
+        TracerBtn.Text = "ESP Tia (Tracer): TẮT"
+        TracerBtn.TextColor3 = Color3.fromRGB(255, 50, 50)
+        TracerBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    end
+end)
+
+CreateSlider(ESPContainer, "Tầm nhìn ESP (Mét)", 72, 30, 600, Settings.ESPDistanceMax, function(val) Settings.ESPDistanceMax = val end)
+
+-- ==========================================
+-- NỘI DUNG TAB GIẢM LAG
+-- ==========================================
+local EffectsBtn = Instance.new("TextButton")
+EffectsBtn.Parent = OptContainer
+EffectsBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+EffectsBtn.Position = UDim2.new(0, 10, 0, 5)
+EffectsBtn.Size = UDim2.new(0, 240, 0, 32)
+EffectsBtn.Font = Enum.Font.SourceSansBold
+EffectsBtn.Text = "Xóa 100% Hiệu ứng: TẮT"
+EffectsBtn.TextColor3 = Color3.fromRGB(255, 50, 50)
+EffectsBtn.TextSize = 12
+
+EffectsBtn.MouseButton1Click:Connect(function()
+    Settings.NoEffects = not Settings.NoEffects
+    if Settings.NoEffects then
+        EffectsBtn.Text = "Xóa 100% Hiệu ứng: ĐÃ BẬT"
+        EffectsBtn.TextColor3 = Color3.fromRGB(50, 255, 50)
+        EffectsBtn.BackgroundColor3 = Color3.fromRGB(20, 80, 20)
+        for _, v in pairs(workspace:GetDescendants()) do
+            if v:IsA("ParticleEmitter") or v:IsA("Fire") or v:IsA("Smoke") or v:IsA("Sparkles") or v:IsA("Explosion") then
+                v:Destroy()
+            end
+        end
+    else
+        EffectsBtn.Text = "Xóa 100% Hiệu ứng: TẮT"
+        EffectsBtn.TextColor3 = Color3.fromRGB(255, 50, 50)
+        EffectsBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    end
+end)
+
+local WhitePartsBtn = Instance.new("TextButton")
+WhitePartsBtn.Parent = OptContainer
+WhitePartsBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+WhitePartsBtn.Position = UDim2.new(0, 10, 0, 42)
+WhitePartsBtn.Size = UDim2.new(0, 240, 0, 32)
+WhitePartsBtn.Font = Enum.Font.SourceSansBold
+WhitePartsBtn.Text = "Vật thể trắng đục 100%: TẮT"
+WhitePartsBtn.TextColor3 = Color3.fromRGB(255, 50, 50)
+WhitePartsBtn.TextSize = 12
+
+WhitePartsBtn.MouseButton1Click:Connect(function()
+    Settings.WhiteParts = not Settings.WhiteParts
+    if Settings.WhiteParts then
+        WhitePartsBtn.Text = "Vật thể trắng đục 100%: ĐÃ BẬT"
+        WhitePartsBtn.TextColor3 = Color3.fromRGB(50, 255, 50)
+        WhitePartsBtn.BackgroundColor3 = Color3.fromRGB(20, 80, 20)
+        for _, v in pairs(workspace:GetDescendants()) do
+            if v:IsA("BasePart") and not v.Parent:FindFirstChild("Humanoid") then
+                v.Color = Color3.fromRGB(255, 255, 255)
+                v.Material = Enum.Material.SmoothPlastic
+                v.Transparency = 0
+            end
+        end
+    else
+        WhitePartsBtn.Text = "Vật thể trắng đục 100%: TẮT"
+        WhitePartsBtn.TextColor3 = Color3.fromRGB(255, 50, 50)
+        WhitePartsBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    end
+end)
+
+local FPSBtn = Instance.new("TextButton")
+FPSBtn.Parent = OptContainer
+FPSBtn.BackgroundColor3 = Color3.fromRGB(20, 80, 20)
+FPSBtn.Position = UDim2.new(0, 10, 0, 79)
+FPSBtn.Size = UDim2.new(0, 240, 0, 32)
+FPSBtn.Font = Enum.Font.SourceSansBold
+FPSBtn.Text = "Hiển thị FPS: BẬT"
+FPSBtn.TextColor3 = Color3.fromRGB(50, 255, 50)
+FPSBtn.TextSize = 12
+
+FPSBtn.MouseButton1Click:Connect(function()
+    Settings.ShowFPS = not Settings.ShowFPS
+    if Settings.ShowFPS then
+        FPSBtn.Text = "Hiển thị FPS: BẬT"
+        FPSBtn.TextColor3 = Color3.fromRGB(50, 255, 50)
+        FPSBtn.BackgroundColor3 = Color3.fromRGB(20, 80, 20)
+        if FPSText then FPSText.Visible = true end
+    else
+        FPSBtn.Text = "Hiển thị FPS: TẮT"
+        FPSBtn.TextColor3 = Color3.fromRGB(255, 50, 50)
+        FPSBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        if FPSText then FPSText.Visible = false end
+    end
+end)
+
+-- ==========================================
+-- XỬ LÝ LOGIC AIM & ESP TỐI ƯU
+-- ==========================================
+local function GetClosestTarget()
+    local closestTarget = nil
+    local shortestDistance = Settings.FOVRadius
+    local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
+            local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
+            if rootPart then
+                local distance3D = (rootPart.Position - Camera.CFrame.Position).Magnitude
+                if distance3D <= Settings.MaxRange then
+                    local partName = Settings.TargetPart
+                    if partName == "UpperTorso" and not player.Character:FindFirstChild("UpperTorso") then
+                        partName = "Torso"
+                    end
+
+                    local hitPart = player.Character:FindFirstChild(partName)
+                    if hitPart then
+                        local screenPos, onScreen = Camera:WorldToViewportPoint(hitPart.Position)
+                        if onScreen then
+                            local screenPosVector = Vector2.new(screenPos.X, screenPos.Y)
+                            local distance2D = (screenPosVector - screenCenter).Magnitude
+                            if distance2D < shortestDistance then
+                                shortestDistance = distance2D
+                                closestTarget = hitPart
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return closestTarget
+end
+
+local lastTick = tick()
+local frameCount = 0
+
+RunService.RenderStepped:Connect(function()
+    -- Cập nhật FPS mượt mà
+    if Settings.ShowFPS and FPSText then
+        frameCount = frameCount + 1
+        local currentTick = tick()
+        if currentTick - lastTick >= 0.5 then
+            local fps = math.floor(frameCount / (currentTick - lastTick))
+            FPSText.Text = "FPS: " .. fps
+            frameCount = 0
+            lastTick = currentTick
+        end
+    end
+
+    -- Cập nhật FOV
+    if FOVCircle then
+        local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+        FOVCircle.Position = screenCenter
+        FOVCircle.Radius = Settings.FOVRadius
+        FOVCircle.Visible = Settings.AimEnabled
+    end
+
+    -- Aim khóa mục tiêu
+    if Settings.AimEnabled then
+        local target = GetClosestTarget()
+        if target then
+            Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, target.Position), 0.6)
+        end
+    end
+
+    -- Xử lý ESP tối ưu hóa mượt mà
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            if not ESPList[player] then
+                pcall(function()
+                    local box = Drawing.new("Square")
+                    box.Visible = false; box.Color = Color3.fromRGB(0, 255, 255); box.Thickness = 1.5; box.Filled = false
+
+                    local healthBar = Drawing.new("Square")
+                    healthBar.Visible = false; healthBar.Color = Color3.fromRGB(0, 0, 0); healthBar.Thickness = 1; healthBar.Filled = true
+
+                    local healthFill = Drawing.new("Square")
+                    healthFill.Visible = false; healthFill.Color = Color3.fromRGB(0, 255, 0); healthFill.Thickness = 1; healthFill.Filled = true
+
+                    local tracer = Drawing.new("Line")
+           
